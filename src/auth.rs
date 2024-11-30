@@ -20,10 +20,10 @@ pub enum Role {
 pub struct User {
     pub username: String,
     password: String,
-    full_name: String,
-    ssn: String,
-    age: u32,
-    role: Role,
+    pub full_name: String,
+    pub ssn: String,
+    pub age: u32,
+    pub role: Role,
 }
 
 impl Ord for User {

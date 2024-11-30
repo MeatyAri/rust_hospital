@@ -1,5 +1,7 @@
 use std::io;
 
+use crate::auth::Auth;
+
 pub struct MenuHandler<'a> {
     pub query: String,
     pub options: &'a [String],
@@ -8,6 +10,10 @@ pub struct MenuHandler<'a> {
 impl<'a> MenuHandler<'a> {
     pub fn new(query: String, options: &'a [String]) -> MenuHandler<'a> {
         MenuHandler { query, options }
+    }
+
+    pub fn clear_terminal() {
+        print!("\x1B[2J\x1B[1;1H");
     }
 
     fn get_selected_option(&self) -> String {
@@ -51,4 +57,91 @@ pub fn main_menu() -> String {
     selected
 }
 
+pub fn patient_menu(auth: &mut Auth) {
+    let options = ["Make an appointment".to_string(), "Cancel an appointment".to_string(), "My Account".to_string(), "Logout".to_string()];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), &options);
+    let selected = menu.run();
 
+    match selected.as_str() {
+        "Make an appointment" => println!("Make an appointment"),
+        "Cancel an appointment" => println!("Cancel an appointment"),
+        "My Account" => println!("My Account"),
+        "Logout" => auth.logout(),
+        _ => println!("Invalid option"),
+    }
+}
+
+pub fn doctor_menu(auth: &mut Auth) {
+    let options = ["Visit Patient".to_string(), "My Account".to_string(), "Logout".to_string()];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), &options);
+    let selected = menu.run();
+
+    match selected.as_str() {
+        "Visit Patient" => println!("Visit Patient"),
+        "My Account" => println!("My Account"),
+        "Logout" => auth.logout(),
+        _ => println!("Invalid option"),
+    }
+}
+
+pub fn pharmacist_menu(auth: &mut Auth) {
+    let options = ["Dispense patient medications".to_string(), "My Account".to_string(), "Logout".to_string()];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), &options);
+    let selected = menu.run();
+
+    match selected.as_str() {
+        "Dispense patient medications" => println!("Dispense patient medications"),
+        "My Account" => println!("My Account"),
+        "Logout" => auth.logout(),
+        _ => println!("Invalid option"),
+    }
+}
+
+pub fn triage_supervisor_menu(auth: &mut Auth) {
+    let options = ["Assign patients to doctors".to_string(), "My Account".to_string(), "Logout".to_string()];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), &options);
+    let selected = menu.run();
+
+    match selected.as_str() {
+        "Assign patients to doctors" => println!("Assign patients to doctors"),
+        "My Account" => println!("My Account"),
+        "Logout" => auth.logout(),
+        _ => println!("Invalid option"),
+    }
+}
+
+pub fn emergency_doctor_menu(auth: &mut Auth) {
+    let options = ["Visit Triage patients".to_string(), "My Account".to_string(), "Logout".to_string()];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), &options);
+    let selected = menu.run();
+
+    match selected.as_str() {
+        "Visit Triage patients" => println!("Visit Triage patients"),
+        "My Account" => println!("My Account"),
+        "Logout" => auth.logout(),
+        _ => println!("Invalid option"),
+    }
+}
+
+pub fn admin_menu(auth: &mut Auth) {
+    let options = [
+        "Register a new user".to_string(),
+        "Delete a user".to_string(),
+        "Search for a user".to_string(),
+        "View all users".to_string(),
+        "My Account".to_string(),
+        "Logout".to_string(),
+    ];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), &options);
+    let selected = menu.run();
+
+    match selected.as_str() {
+        "Register a new user" => println!("Register a new user"),
+        "Delete a user" => println!("Delete a user"),
+        "Search for a user" => println!("Search for a user"),
+        "View all users" => println!("View all users"),
+        "My Account" => println!("My Account"),
+        "Logout" => auth.logout(),
+        _ => println!("Invalid option"),
+    }
+}
