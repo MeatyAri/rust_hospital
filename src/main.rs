@@ -1,16 +1,17 @@
 mod cli_handler;
-use cli_handler::MenuHandler;
+mod auth;
+mod db_handler;
+mod data_structures;
 
+use db_handler::Database;
+use auth::Auth;
 
 fn main() {
-    let options = [
-        "Option 1".to_string(),
-        "Option 2".to_string(),
-        "Option 3".to_string(),
-        "Option 4".to_string(),
-    ];
+    let mut db = Database::load_from_file("users.db").unwrap_or(Database::new());
+    let mut auth = Auth::new(&mut db);
     
-    let menu = MenuHandler::new("Choose an option:".to_string(), &options);
-    let selected = menu.run();
-    println!("You selected: {}", selected);
+    let selected = cli_handler::main_menu();
+
+    auth.authenticate(selected);
+    println!("Logged in as: {:?}", auth.user);
 }

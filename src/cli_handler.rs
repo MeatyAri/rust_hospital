@@ -10,7 +10,7 @@ impl<'a> MenuHandler<'a> {
         MenuHandler { query, options }
     }
 
-    pub fn run(&self) -> String {
+    fn get_selected_option(&self) -> String {
         loop {
             println!("{}", self.query);
             for (i, option) in self.options.iter().enumerate() {
@@ -27,4 +27,28 @@ impl<'a> MenuHandler<'a> {
             }
         }
     }
+
+    pub fn get_input_string(query: String) -> String {
+        println!("{}", query);
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap();
+        input.trim().to_string()
+    }
+
+    pub fn run(&self) -> String {
+        if self.options.is_empty() {
+            Self::get_input_string(self.query.clone())
+        } else {
+            self.get_selected_option()
+        }
+    }
 }
+
+pub fn main_menu() -> String {
+    let options = ["Login".to_string(), "Sign Up".to_string(), "Exit".to_string()];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), &options);
+    let selected = menu.run();
+    selected
+}
+
+
