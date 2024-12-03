@@ -1,7 +1,7 @@
 use crate::auth::Auth;
 use crate::cli_handler::{doctor_menu, get_input_string, MenuHandler};
 use crate::data_structures::stack::Stack;
-use crate::db::entities::{Patient, Prescription};
+use crate::db::entities::{Patient, Prescription, Role};
 
 
 pub fn make_appointment(auth: &mut Auth) {
@@ -95,4 +95,32 @@ pub fn dispense_medications(auth: &mut Auth) {
     } else {
         println!("Patient not found");
     }
+}
+
+pub fn assign_patients(auth: &mut Auth) {
+    let patient_username = get_input_string("Enter patient username".to_string());
+    if auth.db.get_user(patient_username.clone()).is_none() {
+        let patient_password = get_input_string("Enter patient password".to_string());
+        let patient_full_name = get_input_string("Enter patient full name".to_string());
+        let patient_ssn = get_input_string("Enter patient ssn".to_string());
+        let patient_age = get_input_string("Enter patient age".to_string()).parse::<u32>().unwrap();
+        auth.register(patient_username.clone(), patient_password, patient_full_name, patient_ssn, patient_age, Role::Patient).unwrap();
+        auth.db.commit().unwrap();
+    }
+
+    let options = auth.db.clinics_data.as_ref().unwrap().iter().map(|clinic| clinic.name.as_str()).collect::<Vec<&str>>().into_iter();
+    let clinic_menu = MenuHandler::new("Choose a clinic".to_string(), options);
+    let selected_clinic = clinic_menu.run();
+    let selected_clinic = auth.db.clinics_data.as_mut().unwrap().get_by_uniq_attr(selected_clinic).unwrap();
+    let options = selected_clinic.doctors.iter().map(|doctor| doctor.as_str()).collect::<Vec<&str>>().into_iter();
+    let doctor_menu = MenuHandler::new("Choose a doctor".to_string(), options);
+    let selected_doctor = doctor_menu.run();
+    let priority = get_input_string("Enter patient priority".to_string()).parse::<u32>().unwrap();
+
+    auth.db.doctors_data.as_mut().unwrap().get_by_uniq_attr(selected_doctor).unwrap().patients.insert(Patient {
+        name: patient_username,
+        priority
+    });
+
+    auth.db.commit().unwrap();
 }

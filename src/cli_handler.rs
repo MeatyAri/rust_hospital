@@ -1,7 +1,7 @@
 use std::io;
 
 use crate::auth::Auth;
-use crate::menus_logic::{cancel_appointment, dispense_medications, make_appointment, visit_patients, visit_patients_wrapper};
+use crate::menus_logic::{assign_patients, cancel_appointment, dispense_medications, make_appointment, visit_patients, visit_patients_wrapper};
 
 
 pub struct MenuHandler<'a, I>
@@ -114,7 +114,7 @@ pub fn triage_supervisor_menu(auth: &mut Auth) {
     let selected = menu.run();
 
     match selected.as_str() {
-        "Assign patients to doctors" => println!("Assign patients to doctors"),
+        "Assign patients to doctors" => assign_patients(auth),
         "My Account" => println!("My Account"),
         "Logout" => auth.logout(),
         _ => println!("Invalid option"),
@@ -127,7 +127,7 @@ pub fn emergency_doctor_menu(auth: &mut Auth) {
     let selected = menu.run();
 
     match selected.as_str() {
-        "Visit Triage patients" => println!("Visit Triage patients"),
+        "Visit Triage patients" => visit_patients_wrapper(auth),
         "My Account" => println!("My Account"),
         "Logout" => auth.logout(),
         _ => println!("Invalid option"),

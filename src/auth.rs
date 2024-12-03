@@ -42,7 +42,7 @@ impl<'a> Auth<'a> {
         let user = User::new(username, password, full_name, ssn, age, role);
         self.db.insert_user(user.clone())?;
 
-        if user.role == Role::Doctor {
+        if user.role == Role::Doctor || user.role == Role::EmergencyDoctor{
             self.db.insert_doctors_list(DoctorsList { doctor: user.username.clone(), patients: PriorityQueue::new() })?;
         }
 

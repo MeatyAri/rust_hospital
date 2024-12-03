@@ -26,9 +26,18 @@ fn test_data(auth: &mut Auth) {
     auth.signup("pharmacist1".to_string(), "password1".to_string(), "Dr. John Doe".to_string(), "123-45-6789".to_string(), 30, Role::Pharmacist).unwrap();
     auth.logout();
 
+    // insert a triage supervisor for testing
+    auth.signup("tir1".to_string(), "password1".to_string(), "Dr. John Doe".to_string(), "123-45-6789".to_string(), 30, Role::TriageSupervisor).unwrap();
+    auth.logout();
+
+    // insert an emergency doctor for testing
+    auth.signup("emdoc1".to_string(), "password1".to_string(), "Dr. John Doe".to_string(), "123-45-6789".to_string(), 30, Role::EmergencyDoctor).unwrap();
+    auth.logout();
+
     // Insert two clinics for testing
     let mut doctors1 = LinkedList::new();
     doctors1.insert("doc1".to_string());
+    doctors1.insert("emdoc1".to_string());
     // let mut doctors2 = LinkedList::new();
     // doctors2.insert("doc2".to_string());
     auth.db.insert_clinic(Clinic { name: "Clinic A".to_string(), doctors: doctors1}).unwrap();
@@ -41,8 +50,8 @@ fn main() {
     let mut db = Database::load_from_file("database.bin").unwrap_or(Database::new());
     let mut auth = Auth::new(&mut db);
 
-    // test_data(&mut auth);
-    println!("{:?}", auth.db); // for debugging
+    // test_data(&mut auth); // for testing
+    // println!("{:?}", auth.db); // for debugging
 
     loop {
         if let Some(ref user) = auth.user {
