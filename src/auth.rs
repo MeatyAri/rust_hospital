@@ -1,72 +1,13 @@
 use std::io;
-use serde::{Serialize, Deserialize};
-use std::cmp::{Ord, Ordering};
 
-use crate::data_structures::bst::UniqueAttribute;
-use crate::db_handler::Database;
-use crate::cli_handler::MenuHandler;
+use crate::data_structures::priority_queue::PriorityQueue;
+use crate::db::db_handler::Database;
+use crate::cli_handler::{clear_terminal, get_input_string, MenuHandler};
+use crate::db::entities::{DoctorsList, Role, User};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum Role {
-    Patient,
-    Doctor,
-    Pharmacist,
-    TriageSupervisor,
-    EmergencyDoctor,
-    Admin,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct User {
-    pub username: String,
-    password: String,
-    pub full_name: String,
-    pub ssn: String,
-    pub age: u32,
-    pub role: Role,
-}
-
-impl Ord for User {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.username.cmp(&other.username)
-    }
-}
-
-impl PartialOrd for User {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for User {
-    fn eq(&self, other: &Self) -> bool {
-        self.username == other.username
-    }
-}
-
-impl Eq for User {}
-
-impl UniqueAttribute for User {
-    fn uattr(&self) -> String {
-        self.username.clone()
-    }
-}
-
-impl User {
-    pub fn new(username: String, password: String, full_name: String, ssn: String, age: u32, role: Role) -> Self {
-        User {
-            username,
-            password,
-            full_name,
-            ssn,
-            age,
-            role,
-        }
-    }
-}
 
 pub struct Auth<'a> {
-    db: &'a mut Database,
+    pub db: &'a mut Database,
     pub user: Option<User>,
 }
 
@@ -79,9 +20,9 @@ impl<'a> Auth<'a> {
     }
 
     pub fn login(&mut self, username: String, password: String) -> bool {
-        match self.db.get(username.clone()) {
+        match self.db.get_user(username.clone()) {
             Some(user) => {
-                if user.password == password {
+                if user.verify_password(password) {
                     self.user = Some(user.clone());
                     true
                 } else {
@@ -94,12 +35,18 @@ impl<'a> Auth<'a> {
 
     pub fn logout(&mut self) {
         self.user = None;
+        clear_terminal();
     }
 
     pub fn register(&mut self, username: String, password: String, full_name: String, ssn: String, age: u32, role: Role) -> io::Result<User> {
         let user = User::new(username, password, full_name, ssn, age, role);
-        self.db.insert(user.clone())?;
-        self.db.save_to_file("users.db").unwrap();
+        self.db.insert_user(user.clone())?;
+
+        if user.role == Role::Doctor {
+            self.db.insert_doctors_list(DoctorsList { doctor: user.username.clone(), patients: PriorityQueue::new() })?;
+        }
+
+        self.db.commit().unwrap();
         Ok(user)
     }
 
@@ -113,10 +60,11 @@ impl<'a> Auth<'a> {
         match method.as_str() {
             "Login" => {
                 println!("Login");
-                let username = MenuHandler::get_input_string("Enter your username".to_string());
-                let password = MenuHandler::get_input_string("Enter your password".to_string());
-                if self.login(username, password) {
-                    println!("Login successful");
+                let username = get_input_string("Enter your username".to_string());
+                let password = get_input_string("Enter your password".to_string());
+                if self.login(username.clone(), password) {
+                    clear_terminal();
+                    println!("Logged in as: {:?}", username);
                 } else {
                     println!("Login failed");
                 }
@@ -124,23 +72,16 @@ impl<'a> Auth<'a> {
             "Sign Up" => {
                 println!("Sign Up");
                 loop {
-                    let username = MenuHandler::get_input_string("Enter a username".to_string());
-                    let password = MenuHandler::get_input_string("Enter a password".to_string());
-                    let full_name = MenuHandler::get_input_string("Enter your full name".to_string());
-                    let ssn = MenuHandler::get_input_string("Enter your ssn".to_string());
+                    let username = get_input_string("Enter a username".to_string());
+                    let password = get_input_string("Enter a password".to_string());
+                    let full_name = get_input_string("Enter your full name".to_string());
+                    let ssn = get_input_string("Enter your ssn".to_string());
                     
-                    let age = MenuHandler::get_input_string("Enter your age".to_string());
+                    let age = get_input_string("Enter your age".to_string());
                     let age: u32 = age.parse().unwrap();
 
-                    let options = [
-                        "Patient".to_string(),
-                        "Doctor".to_string(),
-                        "Pharmacist".to_string(),
-                        "TriageSupervisor".to_string(),
-                        "EmergencyDoctor".to_string(),
-                        "Admin".to_string(),
-                    ];
-                    let role_menu = MenuHandler::new("Select your role:".to_string(), &options);
+                    let options = ["Patient", "Doctor", "Pharmacist", "TriageSupervisor", "EmergencyDoctor", "Admin"];
+                    let role_menu = MenuHandler::new("Select your role:".to_string(), options.into_iter());
                     let role = role_menu.run();
                     let role = match role.as_str() {
                         "Patient" => Role::Patient,
@@ -187,10 +128,10 @@ impl<'a> Auth<'a> {
 //     // db.insert(User::new("user3".to_string(), "password3".to_string(), "Bob Johnson".to_string(), "456-78-9012".to_string(), 40, Role::Patient));
 
 //     // // Save to file
-//     // db.save_to_file("users.db")?;
+//     // db.commit()?;
 
 //     // Load from file
-//     let loaded_db = Database::load_from_file("users.db")?;
+//     let loaded_db = Database::load_from_file("database.db")?;
 //     if let Some(ref data) = loaded_db.data {
 //         println!("{:?}", data);
 //     }

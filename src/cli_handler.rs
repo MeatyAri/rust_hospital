@@ -1,70 +1,81 @@
 use std::io;
 
 use crate::auth::Auth;
+use crate::menus_logic::{cancel_appointment, dispense_medications, make_appointment, visit_patients, visit_patients_wrapper};
 
-pub struct MenuHandler<'a> {
+
+pub struct MenuHandler<'a, I>
+where
+    I: Iterator<Item = &'a str>,
+{
     pub query: String,
-    pub options: &'a [String],
+    pub options: I,
 }
 
-impl<'a> MenuHandler<'a> {
-    pub fn new(query: String, options: &'a [String]) -> MenuHandler<'a> {
+impl<'a, I> MenuHandler<'a, I>
+where
+    I: Iterator<Item = &'a str> + Clone,
+{
+    pub fn new(query: String, options: I) -> MenuHandler<'a, I> {
         MenuHandler { query, options }
-    }
-
-    pub fn clear_terminal() {
-        print!("\x1B[2J\x1B[1;1H");
     }
 
     fn get_selected_option(&self) -> String {
         loop {
             println!("{}", self.query);
-            for (i, option) in self.options.iter().enumerate() {
+            for (i, option) in self.options.clone().enumerate() {
                 println!("{}: {}", i + 1, option);
             }
             let mut input = String::new();
             io::stdin().read_line(&mut input).unwrap();
             let input = input.trim().parse::<usize>();
             match input {
-                Ok(n) if n > 0 && n <= self.options.len() => {
-                    return self.options[n - 1].clone();
+                Ok(n) if n > 0 && n <= self.options.clone().count() => {
+                    return self
+                        .options
+                        .clone()
+                        .nth(n - 1)
+                        .expect("option not found")
+                        .to_string();
                 }
                 _ => println!("Invalid input"),
             }
         }
     }
 
-    pub fn get_input_string(query: String) -> String {
-        println!("{}", query);
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
-        input.trim().to_string()
-    }
-
     pub fn run(&self) -> String {
-        if self.options.is_empty() {
-            Self::get_input_string(self.query.clone())
-        } else {
-            self.get_selected_option()
-        }
+        self.get_selected_option()
     }
 }
 
+pub fn get_input_string(query: String) -> String {
+    println!("{}", query);
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).unwrap();
+    input.trim().to_string()
+}
+
+pub fn clear_terminal() {
+    print!("\x1B[2J\x1B[1;1H");
+}
+
+// ### menus ###
+
 pub fn main_menu() -> String {
-    let options = ["Login".to_string(), "Sign Up".to_string(), "Exit".to_string()];
-    let menu = MenuHandler::new("What would you like to do?".to_string(), &options);
+    let options = ["Login", "Sign Up", "Exit"];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), options.into_iter());
     let selected = menu.run();
     selected
 }
 
 pub fn patient_menu(auth: &mut Auth) {
-    let options = ["Make an appointment".to_string(), "Cancel an appointment".to_string(), "My Account".to_string(), "Logout".to_string()];
-    let menu = MenuHandler::new("What would you like to do?".to_string(), &options);
+    let options = ["Make an appointment", "Cancel an appointment", "My Account", "Logout"];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), options.into_iter());
     let selected = menu.run();
 
     match selected.as_str() {
-        "Make an appointment" => println!("Make an appointment"),
-        "Cancel an appointment" => println!("Cancel an appointment"),
+        "Make an appointment" => make_appointment(auth),
+        "Cancel an appointment" => cancel_appointment(auth),
         "My Account" => println!("My Account"),
         "Logout" => auth.logout(),
         _ => println!("Invalid option"),
@@ -72,12 +83,12 @@ pub fn patient_menu(auth: &mut Auth) {
 }
 
 pub fn doctor_menu(auth: &mut Auth) {
-    let options = ["Visit Patient".to_string(), "My Account".to_string(), "Logout".to_string()];
-    let menu = MenuHandler::new("What would you like to do?".to_string(), &options);
+    let options = ["Visit Patients", "My Account", "Logout"];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), options.into_iter());
     let selected = menu.run();
 
     match selected.as_str() {
-        "Visit Patient" => println!("Visit Patient"),
+        "Visit Patients" => visit_patients_wrapper(auth),
         "My Account" => println!("My Account"),
         "Logout" => auth.logout(),
         _ => println!("Invalid option"),
@@ -85,12 +96,12 @@ pub fn doctor_menu(auth: &mut Auth) {
 }
 
 pub fn pharmacist_menu(auth: &mut Auth) {
-    let options = ["Dispense patient medications".to_string(), "My Account".to_string(), "Logout".to_string()];
-    let menu = MenuHandler::new("What would you like to do?".to_string(), &options);
+    let options = ["Dispense patient medications", "My Account", "Logout"];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), options.into_iter());
     let selected = menu.run();
 
     match selected.as_str() {
-        "Dispense patient medications" => println!("Dispense patient medications"),
+        "Dispense patient medications" => dispense_medications(auth),
         "My Account" => println!("My Account"),
         "Logout" => auth.logout(),
         _ => println!("Invalid option"),
@@ -98,8 +109,8 @@ pub fn pharmacist_menu(auth: &mut Auth) {
 }
 
 pub fn triage_supervisor_menu(auth: &mut Auth) {
-    let options = ["Assign patients to doctors".to_string(), "My Account".to_string(), "Logout".to_string()];
-    let menu = MenuHandler::new("What would you like to do?".to_string(), &options);
+    let options = ["Assign patients to doctors", "My Account", "Logout"];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), options.into_iter());
     let selected = menu.run();
 
     match selected.as_str() {
@@ -111,8 +122,8 @@ pub fn triage_supervisor_menu(auth: &mut Auth) {
 }
 
 pub fn emergency_doctor_menu(auth: &mut Auth) {
-    let options = ["Visit Triage patients".to_string(), "My Account".to_string(), "Logout".to_string()];
-    let menu = MenuHandler::new("What would you like to do?".to_string(), &options);
+    let options = ["Visit Triage patients", "My Account", "Logout"];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), options.into_iter());
     let selected = menu.run();
 
     match selected.as_str() {
@@ -124,15 +135,8 @@ pub fn emergency_doctor_menu(auth: &mut Auth) {
 }
 
 pub fn admin_menu(auth: &mut Auth) {
-    let options = [
-        "Register a new user".to_string(),
-        "Delete a user".to_string(),
-        "Search for a user".to_string(),
-        "View all users".to_string(),
-        "My Account".to_string(),
-        "Logout".to_string(),
-    ];
-    let menu = MenuHandler::new("What would you like to do?".to_string(), &options);
+    let options = ["Register a new user", "Delete a user", "Search for a user", "View all users", "My Account", "Logout"];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), options.into_iter());
     let selected = menu.run();
 
     match selected.as_str() {

@@ -1,10 +1,14 @@
-// Define the structure of a Node in the linked list
+use serde::{Serialize, Deserialize};
+use std::fmt::Debug;
+
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct Node<T> {
     value: T,
     next: Option<Box<Node<T>>>,
 }
 
-// Define the structure of the Stack
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Stack<T> {
     top: Option<Box<Node<T>>>,
 }

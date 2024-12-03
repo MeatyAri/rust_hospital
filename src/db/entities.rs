@@ -1,0 +1,144 @@
+use serde::{Serialize, Deserialize};
+use std::cmp::{Ord, Ordering};
+use std::fmt::Debug;
+
+use crate::data_structures::linked_list::LinkedList;
+use crate::data_structures::priority_queue::PriorityQueue;
+use crate::data_structures::stack::Stack;
+
+
+pub trait UniqueAttribute {
+    fn uattr(&self) -> String;
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum Role {
+    Patient,
+    Doctor,
+    Pharmacist,
+    TriageSupervisor,
+    EmergencyDoctor,
+    Admin,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct User {
+    pub username: String,
+    password: String,
+    pub full_name: String,
+    pub ssn: String,
+    pub age: u32,
+    pub role: Role,
+}
+
+impl Ord for User {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.username.cmp(&other.username)
+    }
+}
+
+impl PartialOrd for User {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for User {
+    fn eq(&self, other: &Self) -> bool {
+        self.username == other.username
+    }
+}
+
+impl Eq for User {}
+
+impl UniqueAttribute for User {
+    fn uattr(&self) -> String {
+        self.username.clone()
+    }
+}
+
+impl User {
+    pub fn new(username: String, password: String, full_name: String, ssn: String, age: u32, role: Role) -> Self {
+        User {
+            username,
+            password,
+            full_name,
+            ssn,
+            age,
+            role,
+        }
+    }
+
+    pub fn verify_password(&self, password: String) -> bool {
+        self.password == password
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Clinic {
+    pub name: String,
+    pub doctors: LinkedList<String>,
+}
+
+impl UniqueAttribute for Clinic {
+    fn uattr(&self) -> String {
+        self.name.clone()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DoctorsList {
+    pub doctor: String,
+    pub patients: PriorityQueue<Patient>,
+}
+
+impl UniqueAttribute for DoctorsList {
+    fn uattr(&self) -> String {
+        self.doctor.clone()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Patient {
+    pub name: String,
+    pub priority: u32,
+}
+
+impl UniqueAttribute for Patient {
+    fn uattr(&self) -> String {
+        self.name.clone()
+    }
+}
+
+impl Ord for Patient {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.priority.cmp(&other.priority)
+    }
+}
+
+impl PartialOrd for Patient {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Patient {
+    fn eq(&self, other: &Self) -> bool {
+        self.priority == other.priority
+    }
+}
+
+impl Eq for Patient {}
+
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Prescription {
+    pub patient_name: String,
+    pub medications: Stack<String>,
+}
+
+impl UniqueAttribute for Prescription {
+    fn uattr(&self) -> String {
+        self.patient_name.clone()
+    }
+}

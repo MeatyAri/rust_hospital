@@ -1,9 +1,7 @@
 use std::fmt::Debug;
 use serde::{Serialize, Deserialize};
 
-pub trait UniqueAttribute {
-    fn uattr(&self) -> String;
-}
+use crate::db::entities::UniqueAttribute;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TreeNode<T> {
