@@ -15,6 +15,7 @@ use crate::menus_logic::{
     search_drugs,
     visit_patients_wrapper,
     display_all_drug_gps,
+    show_search_complexity,
 };
 
 
@@ -117,8 +118,9 @@ pub fn pharmacist_menu(auth: &mut Auth) {
         "Add Drug",
         "Remove Drug",
         "Search Drugs",
+        "Show Search Complexity",
         "Display All Drugs",
-        "Display All Drug Groups",
+        "Display Drug Groups",
         "Drug Groups Management",
         "My Account",
         "Logout"
@@ -132,8 +134,9 @@ pub fn pharmacist_menu(auth: &mut Auth) {
         "Add Drug" => add_drug(auth),
         "Remove Drug" => remove_drug(auth),
         "Search Drugs" => search_drugs(auth),
+        "Show Search Complexity" => show_search_complexity(auth),
         "Display All Drugs" => display_all_drugs(auth),
-        "Display All Drug Groups" => display_all_drug_gps(auth),
+        "Display Drug Groups" => display_all_drug_gps(auth),
         "Drug Groups Management" => drug_groups_menu(auth),
         "My Account" => println!("My Account"),
         "Logout" => auth.logout(),

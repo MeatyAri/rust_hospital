@@ -276,7 +276,11 @@ pub fn add_drug_to_gp(auth: &mut Auth) {
                 break;
             }
             if let Some(drug) = auth.db.get_drug_by_name(drug_name.clone()) {
-                drugs.push_front(drug.id);
+                if !drugs.contains(&drug.id) {
+                    drugs.push_front(drug.id);
+                } else {
+                    println!("Drug already exists in the group");
+                }
             } else {
                 println!("Drug not found");
             }
@@ -323,4 +327,14 @@ pub fn display_all_drug_gps(auth: &mut Auth) {
             }
         }
     }
+}
+
+pub fn show_search_complexity(auth: &mut Auth) {
+    let height = auth.db.drugs_data.as_ref().unwrap().height();
+    let mut result = LinkedList::new();
+    auth.db.drugs_data.as_ref().unwrap().in_order_traversal_collect(&mut result);
+    let total_nodes = result.len();
+    println!("Total nodes in the tree: {}", total_nodes);
+    println!("Height of the tree: {}", height);
+    println!("Complexity of search: O(log {})", height);
 }

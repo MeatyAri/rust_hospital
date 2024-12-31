@@ -1,9 +1,10 @@
 use std::fmt::Debug;
+use std::cmp;
 use serde::{Serialize, Deserialize};
 
 use crate::db::entities::{Drug, UniqueAttribute};
 
-use super::stack::Stack;
+use super::{linked_list::LinkedList, stack::Stack};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TreeNode<T> {
@@ -12,7 +13,7 @@ pub struct TreeNode<T> {
     right: Option<Box<TreeNode<T>>>,
 }
 
-impl<T: Ord + Debug> TreeNode<T> {
+impl<T: Ord + Debug + Clone> TreeNode<T> {
     pub fn new(value: T) -> Self {
         TreeNode {
             value,
@@ -48,16 +49,6 @@ impl<T: Ord + Debug> TreeNode<T> {
                 Some(ref right_child) => right_child.contains(target),
                 None => false,
             }
-        }
-    }
-
-    pub fn in_order_traversal(&self) {
-        if let Some(ref left_child) = self.left {
-            left_child.in_order_traversal();
-        }
-        println!("{:?}", self.value);
-        if let Some(ref right_child) = self.right {
-            right_child.in_order_traversal();
         }
     }
 
@@ -116,6 +107,58 @@ impl<T: Ord + Debug> TreeNode<T> {
         } else {
             None
         }
+    }
+
+    fn in_order_traversal_helper(&self, result: &mut LinkedList<T>)
+    where
+        T: Clone,
+    {
+        if let Some(ref left_child) = self.left {
+            left_child.in_order_traversal_helper(result);
+        }
+        result.push_front(self.value.clone());
+        if let Some(ref right_child) = self.right {
+            right_child.in_order_traversal_helper(result);
+        }
+    }
+
+    pub fn in_order_traversal_collect(&self, result: &mut LinkedList<T>)
+    where
+        T: Clone,
+    {
+        self.in_order_traversal_helper(result);
+        result.reverse();
+    }
+    
+
+    pub fn balance(&mut self) {
+        let mut nodes = LinkedList::new();
+        self.in_order_traversal_collect(&mut nodes);
+        *self = Self::build_balanced_tree(&nodes, 0, nodes.len());
+    }
+
+    fn build_balanced_tree(nodes: &LinkedList<T>, f: usize, l: usize) -> TreeNode<T>
+    where
+        T: Clone,
+    {
+        if nodes.is_empty() {
+            panic!("Cannot build a tree from an empty slice");
+        }
+        let mid = (f + l) / 2;
+        let mut root = TreeNode::new(nodes.get_by_index(mid).unwrap().clone());
+        if mid > f {
+            root.left = Some(Box::new(Self::build_balanced_tree(nodes, f, mid)));
+        }
+        if mid + 1 < l {
+            root.right = Some(Box::new(Self::build_balanced_tree(nodes, mid + 1, l)));
+        }
+        root
+    }
+
+    pub fn height(&self) -> usize {
+        let left_height = self.left.as_ref().map_or(0, |left| left.height());
+        let right_height = self.right.as_ref().map_or(0, |right| right.height());
+        1 + cmp::max(left_height, right_height)
     }
 }
 
@@ -217,34 +260,6 @@ impl TreeNode<Drug> {
         }
     }
 
-    // pub fn remove_drug_by_id(&mut self, id: u32) -> Option<Box<TreeNode<Drug>>> {
-    //     if id < self.value.id {
-    //         if let Some(ref mut left_child) = self.left {
-    //             self.left = left_child.remove_drug_by_id(id);
-    //         }
-    //     } else if id > self.value.id {
-    //         if let Some(ref mut right_child) = self.right {
-    //             self.right = right_child.remove_drug_by_id(id);
-    //         }
-    //     } else {
-    //         // Node to be removed found
-    //         if self.left.is_none() {
-    //             // Case 1: No left child
-    //             return self.right.take();
-    //         } else if self.right.is_none() {
-    //             // Case 2: No right child
-    //             return self.left.take();
-    //         } else {
-    //             // Case 3: Two children
-    //             let right_child = self.right.as_mut().unwrap();
-    //             let min = right_child.find_min().clone();
-    //             self.right = self.right.take().unwrap().remove_drug_by_id(min.value.id);
-    //             self.value = min.value;
-    //         }
-    //     }
-    //     None
-    // }
-
     pub fn remove_drug_by_id(root: Option<Box<TreeNode<Drug>>>, id: u32) -> Option<Box<TreeNode<Drug>>> {
         if let Some(mut node) = root {
             if id < node.value.id {
@@ -318,9 +333,10 @@ mod tests {
         root.insert(12);
         root.insert(18);
 
-        let mut result = Vec::new();
+        let mut result = LinkedList::new();
         root.in_order_traversal_collect(&mut result);
-        assert_eq!(result, vec![3, 5, 7, 10, 12, 15, 18]);
+        let collected: Vec<_> = result.iter().collect();
+        assert_eq!(collected, vec![&3, &5, &7, &10, &12, &15, &18]);
     }
 
     #[test]
@@ -354,33 +370,11 @@ mod tests {
         root.insert(Drug::new(3, "Ibuprofen".to_string(), 150.0, 20));
         let mut wrapper = Some(Box::new(root));
 
-        println!("{:?}", wrapper);
         wrapper = TreeNode::remove_drug_by_id(wrapper, 1);
-        println!("{:?}", wrapper);
         wrapper = TreeNode::remove_drug_by_id(wrapper, 33);
-        println!("{:?}", wrapper);
-        wrapper = TreeNode::remove_drug_by_id(wrapper, 2);
-        println!("{:?}", wrapper);
-        wrapper = TreeNode::remove_drug_by_id(wrapper, 3);
-        println!("{:?}", wrapper);
 
         if let Some(ref mut root) = wrapper {
             assert!(root.get_drug_by_name("Aspirin".to_string()).is_none());
-        }
-    }
-
-    impl<T: Ord + Debug> TreeNode<T> {
-        fn in_order_traversal_collect(&self, result: &mut Vec<T>)
-        where
-            T: Clone,
-        {
-            if let Some(ref left_child) = self.left {
-                left_child.in_order_traversal_collect(result);
-            }
-            result.push(self.value.clone());
-            if let Some(ref right_child) = self.right {
-                right_child.in_order_traversal_collect(result);
-            }
         }
     }
 }

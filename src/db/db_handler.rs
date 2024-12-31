@@ -104,6 +104,7 @@ impl Database {
                     return Err(Error::new(ErrorKind::AlreadyExists, "Drug with the same id or name already exists"));
                 }
                 data.insert(drug);
+                data.balance();
                 Ok(())
             },
             None => {
