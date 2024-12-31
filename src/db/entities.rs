@@ -142,3 +142,57 @@ impl UniqueAttribute for Prescription {
         self.patient_name.clone()
     }
 }
+
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Drug {
+    pub id: u32,
+    pub name: String,
+    pub price: f32,
+    pub quantity: u32,
+}
+
+impl Drug {
+    pub fn new(id: u32, name: String, price: f32, quantity: u32) -> Self {
+        Drug {
+            id,
+            name,
+            price,
+            quantity,
+        }
+    }
+}
+
+impl Ord for Drug {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
+impl PartialOrd for Drug {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Drug {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for Drug {}
+
+
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DrugGP {
+    pub name: String,
+    pub drugs: LinkedList<u32>,
+}
+
+impl UniqueAttribute for DrugGP {
+    fn uattr(&self) -> String {
+        self.name.clone()
+    }
+}

@@ -1,7 +1,9 @@
 use crate::auth::Auth;
 use crate::cli_handler::{doctor_menu, get_input_string, MenuHandler};
+use crate::data_structures::linked_list::LinkedList;
 use crate::data_structures::stack::Stack;
-use crate::db::entities::{Patient, Prescription, Role};
+use crate::db::entities::{Drug, DrugGP, Patient, Prescription, Role};
+use crate::data_structures::trie::Trie;
 
 
 pub fn make_appointment(auth: &mut Auth) {
@@ -123,4 +125,202 @@ pub fn assign_patients(auth: &mut Auth) {
     });
 
     auth.db.commit().unwrap();
+}
+
+
+pub fn add_drug(auth: &mut Auth) {
+    let name = get_input_string("Enter drug name".to_string());
+    if auth.db.get_drug_by_name(name.clone()).is_none() {
+        let price = get_input_string("Enter drug price".to_string()).parse::<f32>().unwrap();
+        let drug = Drug {
+            id: match auth.db.drugs_data.as_ref() {
+                Some(drugs) => drugs.max().id + 1,
+                None => 0
+                
+            },
+            name: name.clone(),
+            price,
+            quantity: 0
+        };
+        auth.db.insert_drug(drug).unwrap();
+    }
+    let quantity = get_input_string("Enter drug quantity".to_string()).parse::<u32>().unwrap();
+    auth.db.get_drug_by_name(name.clone()).unwrap().quantity += quantity;
+    auth.db.commit().unwrap();
+    println!("Drug added");
+}
+
+pub fn remove_drug(auth: &mut Auth) {
+    let id = get_input_string("Enter drug id".to_string()).parse::<u32>().unwrap();
+    if let Some(drug) = auth.db.get_drug_by_id(id.clone()) {
+        let quantity = get_input_string("Enter quantity to remove".to_string()).parse::<u32>().unwrap();
+        if drug.quantity >= quantity {
+            drug.quantity -= quantity;
+            let remaining_quantity = drug.quantity;
+            if remaining_quantity == 0 {
+                auth.db.remove_drug(id);
+            }
+            auth.db.commit().unwrap();
+            println!("Remained quantity: {}", remaining_quantity);
+        } else {
+            println!("Not enough quantity");
+        }
+    } else {
+        println!("Drug not found");
+    }
+}
+
+pub fn search_drugs(auth: &mut Auth) {
+    let options = ["name", "id", "price"];
+    let menu = MenuHandler::new("Search by".to_string(), options.into_iter());
+    let search_type = menu.run();
+    match search_type.as_str() {
+        "name" => {
+            let name = get_input_string("Enter drug name: ".to_string());
+            if let Some(drug) = auth.db.get_drug_by_name(name.clone()) {
+                println!("Drug found: {:?}", drug);
+            } else {
+                println!("Drug not found");
+
+                let mut trie = Trie::new();
+                for drug in auth.db.drugs_data.as_ref().unwrap().iter() {
+                    trie.insert(&drug.name.to_lowercase());
+                }
+                let suggestions = trie.auto_complete(&name.to_lowercase());
+                if suggestions.is_empty() {
+                    println!("No suggestions found");
+                } else {
+                    println!("Suggestions: {:?}", suggestions.iter().collect::<Vec<_>>());
+                }
+            }
+        }
+        "id" => {
+            let id = get_input_string("Enter drug id: ".to_string()).parse::<u32>().unwrap();
+            if let Some(drug) = auth.db.get_drug_by_id(id) {
+                println!("Drug found: {:?}", drug);
+            } else {
+                println!("Drug not found");
+            }
+        }
+        "price" => {
+            let min_price = get_input_string("Enter minimum price: ".to_string()).parse::<f32>().unwrap();
+            let max_price = get_input_string("Enter maximum price: ".to_string()).parse::<f32>().unwrap();
+            let drugs = auth.db.drugs_data.as_ref().unwrap().iter().filter(|drug| drug.price >= min_price && drug.price <= max_price).collect::<Vec<_>>();
+            if drugs.is_empty() {
+                println!("No drugs found in the given price range");
+            } else {
+                println!("Drugs found: {:?}", drugs);
+            }
+        }
+        _ => {
+            println!("Invalid search type");
+        }
+    }
+}
+
+pub fn display_all_drugs(auth: &mut Auth) {
+    let drugs = auth.db.drugs_data.as_ref();
+    if drugs.is_none() {
+        println!("No drugs available");
+        return;
+    }
+    let drugs = drugs.unwrap();
+
+    let mut total_quantity = 0;
+    let mut cheapest_drug = drugs.iter().next().unwrap();
+    let mut most_expensive_drug = drugs.iter().next().unwrap();
+
+    for drug in drugs.iter() {
+        println!("{:?}", drug);
+        total_quantity += drug.quantity;
+        if drug.price < cheapest_drug.price {
+            cheapest_drug = drug;
+        }
+        if drug.price > most_expensive_drug.price {
+            most_expensive_drug = drug;
+        }
+    }
+
+    println!("Total quantity of all drugs: {}", total_quantity);
+    println!("Cheapest drug: {:?}", cheapest_drug);
+    println!("Most expensive drug: {:?}", most_expensive_drug);
+}
+
+pub fn create_drug_gp(auth: &mut Auth) {
+    let name = get_input_string("Enter drug group name".to_string());
+    if auth.db.get_drug_gp(name.clone()).is_none() {
+        let mut drugs = LinkedList::new();
+        loop {
+            let drug_name = get_input_string("Enter drug name or type 'done'".to_string());
+            if drug_name == "done" {
+                break;
+            }
+            if let Some(drug) = auth.db.get_drug_by_name(drug_name.clone()) {
+                drugs.push_front(drug.id);
+            } else {
+                println!("Drug not found");
+            }
+        }
+        auth.db.insert_drug_gp(DrugGP { name: name.clone(), drugs }).unwrap();
+    }
+    auth.db.commit().unwrap();
+}
+
+pub fn add_drug_to_gp(auth: &mut Auth) {
+    let name = get_input_string("Enter drug group name".to_string());
+    if let Some(drug_gp) = auth.db.get_drug_gp(name.clone()) {
+        let mut drugs = drug_gp.drugs.clone();
+        loop {
+            let drug_name = get_input_string("Enter drug name or type 'done'".to_string());
+            if drug_name == "done" {
+                break;
+            }
+            if let Some(drug) = auth.db.get_drug_by_name(drug_name.clone()) {
+                drugs.push_front(drug.id);
+            } else {
+                println!("Drug not found");
+            }
+        }
+        auth.db.get_drug_gp(name.clone()).unwrap().drugs = drugs;
+        auth.db.commit().unwrap();
+    } else {
+        println!("Drug group not found");
+    }
+}
+
+pub fn remove_drug_gp(auth: &mut Auth) {
+    let name = get_input_string("Enter drug group name".to_string());
+    if let Some(drug_gp) = auth.db.get_drug_gp(name.clone()) {
+        auth.db.remove_drug_gp(name);
+        auth.db.commit().unwrap();
+        println!("Drug group removed");
+    } else {
+        println!("Drug group not found");
+    }
+}
+
+pub fn display_all_drug_gps(auth: &mut Auth) {
+    let drug_gps = auth.db.drug_gps.as_ref();
+    if drug_gps.is_none() {
+        println!("No drug groups available");
+        return;
+    }
+    let drug_gps = drug_gps.unwrap().clone();
+
+    for drug_gp in drug_gps.iter() {
+        println!("Drug Group: {}", drug_gp.name);
+        let mut drugs = LinkedList::new();
+        for id in drug_gp.drugs.iter() {
+            if let Some(drug) = auth.db.get_drug_by_id(*id) {
+                drugs.push_front(drug.clone());
+            }
+        }
+        if drugs.is_empty() {
+            println!("  No drugs in this group");
+        } else {
+            for drug in drugs.iter() {
+                println!("  - {:?}", drug);
+            }
+        }
+    }
 }

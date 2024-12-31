@@ -4,11 +4,10 @@ mod db;
 mod data_structures;
 mod menus_logic;
 
-use cli_handler::{admin_menu, doctor_menu, emergency_doctor_menu, patient_menu, pharmacist_menu, triage_supervisor_menu, MenuHandler};
-use data_structures::{linked_list::LinkedList, priority_queue::PriorityQueue};
-use db::{db_handler::Database, entities::{Clinic, DoctorsList, User}};
+use cli_handler::{admin_menu, doctor_menu, emergency_doctor_menu, patient_menu, pharmacist_menu, triage_supervisor_menu};
+use data_structures::linked_list::LinkedList;
+use db::{db_handler::Database, entities::{Clinic, Drug, DrugGP, Role}};
 use auth::Auth;
-use db::entities::Role;
 
 
 fn test_data(auth: &mut Auth) {
@@ -42,6 +41,26 @@ fn test_data(auth: &mut Auth) {
     // doctors2.insert("doc2".to_string());
     auth.db.insert_clinic(Clinic { name: "Clinic A".to_string(), doctors: doctors1}).unwrap();
     // auth.db.insert_clinic(Clinic { name: "Clinic B".to_string(), doctors: doctors2 }).unwrap();
+
+    // Insert some drugs for testing
+    auth.db.insert_drug(Drug::new(0, "Aspirin".to_string(), 32.99, 50)).unwrap();
+    auth.db.insert_drug(Drug::new(1, "Ibuprofen".to_string(), 12.99, 100)).unwrap();
+    auth.db.insert_drug(Drug::new(2, "Paracetamol".to_string(), 9.99, 200)).unwrap();
+    auth.db.insert_drug(Drug::new(3, "Amoxicillin".to_string(), 19.99, 30)).unwrap();
+    auth.db.insert_drug(Drug::new(4, "Azithromycin".to_string(), 29.99, 20)).unwrap();
+    auth.db.insert_drug(Drug::new(5, "Ciprofloxacin".to_string(), 39.99, 10)).unwrap();
+
+    // Insert some drug groups for testing
+    let mut drugs1 = LinkedList::new();
+    drugs1.insert(0);
+    drugs1.insert(1);
+    drugs1.insert(2);
+    auth.db.insert_drug_gp(DrugGP { name: "Painkiller".to_string(), drugs: drugs1 }).unwrap();
+
+    let mut drugs2 = LinkedList::new();
+    drugs2.insert(3);
+    drugs2.insert(4);
+    auth.db.insert_drug_gp(DrugGP { name: "Antibiotics".to_string(), drugs: drugs2 }).unwrap();
 
     auth.db.commit().unwrap();
 }

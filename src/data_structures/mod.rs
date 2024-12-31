@@ -3,3 +3,4 @@ pub mod bst;
 pub mod max_heap;
 pub mod stack;
 pub mod priority_queue;
+pub mod trie;
