@@ -81,23 +81,23 @@ impl<T: Debug> LinkedList<T> {
         None
     }
 
-    pub fn remove_last_node(&mut self) {
+    pub fn remove_last_node(&mut self) -> Option<T> {
         if self.head.is_none() {
-            return;
+            return None;
         }
 
         if self.head.as_ref().unwrap().next.is_none() {
-            self.head = None;
             self.length -= 1;
-            return;
+            return self.head.take().map(|node| node.value);
         }
 
         let mut second_last = &mut self.head;
-        while let Some(node) = second_last.as_mut().unwrap().next.as_mut().unwrap().next.as_mut() {
+        while let Some(_node) = second_last.as_mut().unwrap().next.as_mut().unwrap().next.as_mut() {
             second_last = &mut second_last.as_mut().unwrap().next;
         }
-        second_last.as_mut().unwrap().next = None;
         self.length -= 1;
+        
+        second_last.as_mut().unwrap().next.take().map(|node| node.value)
     }
 
     pub fn remove_by_uniq_attr(&mut self, uniq_attr: String) -> bool
@@ -255,7 +255,8 @@ mod tests {
         let mut list = LinkedList::new();
         list.push_front(TestStruct { id: 1, name: "Alice".to_string() });
         list.push_front(TestStruct { id: 2, name: "Bob".to_string() });
-        list.remove_last_node();
+        let removed = list.remove_last_node();
+        assert_eq!(removed.unwrap().id, 1);
         assert_eq!(list.len(), 1);
         assert_eq!(list.head.as_ref().unwrap().value.id, 2);
     }

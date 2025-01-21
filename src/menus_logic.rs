@@ -294,7 +294,7 @@ pub fn add_drug_to_gp(auth: &mut Auth) {
 
 pub fn remove_drug_gp(auth: &mut Auth) {
     let name = get_input_string("Enter drug group name".to_string());
-    if let Some(drug_gp) = auth.db.get_drug_gp(name.clone()) {
+    if let Some(_drug_gp) = auth.db.get_drug_gp(name.clone()) {
         auth.db.remove_drug_gp(name);
         auth.db.commit().unwrap();
         println!("Drug group removed");

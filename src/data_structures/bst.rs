@@ -233,31 +233,39 @@ impl TreeNode<Drug> {
     }
 
     pub fn get_drug_by_name(&self, name: String) -> Option<&Drug> {
-        if self.value.name == name {
-            Some(&self.value)
-        } else {
-            match self.left {
-                Some(ref left_child) => left_child.get_drug_by_name(name),
-                None => match self.right {
-                    Some(ref right_child) => right_child.get_drug_by_name(name),
-                    None => None,
-                },
+        let mut queue = LinkedList::new();
+        queue.push_front(self);
+
+        while let Some(node) = queue.remove_last_node() {
+            if node.value.name == name {
+                return Some(&node.value);
+            }
+            if let Some(ref left_child) = node.left {
+                queue.push_front(left_child);
+            }
+            if let Some(ref right_child) = node.right {
+                queue.push_front(right_child);
             }
         }
+        None
     }
 
     pub fn get_drug_by_name_mut(&mut self, name: String) -> Option<&mut Drug> {
-        if self.value.name == name {
-            Some(&mut self.value)
-        } else {
-            match self.left {
-                Some(ref mut left_child) => left_child.get_drug_by_name_mut(name),
-                None => match self.right {
-                    Some(ref mut right_child) => right_child.get_drug_by_name_mut(name),
-                    None => None,
-                },
+        let mut queue = LinkedList::new();
+        queue.push_front(self);
+
+        while let Some(node) = queue.remove_last_node() {
+            if node.value.name == name {
+                return Some(&mut node.value);
+            }
+            if let Some(ref mut left_child) = node.left {
+                queue.push_front(left_child);
+            }
+            if let Some(ref mut right_child) = node.right {
+                queue.push_front(right_child);
             }
         }
+        None
     }
 
     pub fn remove_drug_by_id(root: Option<Box<TreeNode<Drug>>>, id: u32) -> Option<Box<TreeNode<Drug>>> {
@@ -357,9 +365,17 @@ mod tests {
         let mut root = TreeNode::new(Drug::new(1, "Aspirin".to_string(), 100.0, 5));
         root.insert(Drug::new(2, "Paracetamol".to_string(), 200.0, 10));
         root.insert(Drug::new(3, "Ibuprofen".to_string(), 150.0, 20));
+        root.insert(Drug::new(4, "Amoxicillin".to_string(), 50.0, 30));
+        root.insert(Drug::new(5, "Azithromycin".to_string(), 70.0, 40));
+        root.insert(Drug::new(6, "Ciprofloxacin".to_string(), 90.0, 50));
+        root.balance();
 
         assert_eq!(root.get_drug_by_name("Aspirin".to_string()).unwrap().name, "Aspirin");
         assert_eq!(root.get_drug_by_name("Paracetamol".to_string()).unwrap().name, "Paracetamol");
+        assert_eq!(root.get_drug_by_name("Ibuprofen".to_string()).unwrap().name, "Ibuprofen");
+        assert_eq!(root.get_drug_by_name("Amoxicillin".to_string()).unwrap().name, "Amoxicillin");
+        assert_eq!(root.get_drug_by_name("Azithromycin".to_string()).unwrap().name, "Azithromycin");
+        assert_eq!(root.get_drug_by_name("Ciprofloxacin".to_string()).unwrap().name, "Ciprofloxacin");
         assert!(root.get_drug_by_name("NonExistent".to_string()).is_none());
     }
 

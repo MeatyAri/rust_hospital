@@ -188,7 +188,7 @@ impl Database {
     }
 
     pub fn remove_drug(&mut self, id: u32) {
-        if let Some(ref mut data) = self.drugs_data {
+        if let Some(ref mut _data) = self.drugs_data {
             self.drugs_data = TreeNode::remove_drug_by_id(self.drugs_data.take(), id);
         }
     }
