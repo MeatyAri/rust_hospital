@@ -166,6 +166,29 @@ impl<T: Debug> LinkedList<T> {
         }
         false
     }
+
+    pub fn remove(&mut self, value: &T) -> bool
+    where
+        T: Clone + PartialEq,
+    {
+        let mut current = &mut self.head;
+        while let Some(node) = current.as_mut() {
+            if &node.value == value {
+                if let Some(next_node) = node.next.as_ref() {
+                    node.value = next_node.value.clone();
+                    node.next = next_node.next.clone();
+                    self.length -= 1;
+                } else {
+                    // this function will adjust the length so no need for "self.length -= 1;"
+                    self.remove_last_node();
+                }
+                return true;
+            }
+
+            current = &mut node.next;
+        }
+        false
+    }
 }
 
 pub struct LinkedListIter<'a, T> {

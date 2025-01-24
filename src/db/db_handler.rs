@@ -4,6 +4,7 @@ use bincode;
 use serde::{Serialize, Deserialize};
 use std::fmt::Debug;
 
+use crate::data_structures::map::Graph;
 use crate::db::entities::User;
 use crate::data_structures::bst::TreeNode;
 use crate::data_structures::linked_list::LinkedList;
@@ -11,7 +12,7 @@ use crate::data_structures::linked_list::LinkedList;
 use super::entities::{Clinic, DoctorsList, Prescription, Drug, DrugGP};
 
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Database {
     pub users_data: Option<TreeNode<User>>,
     pub clinics_data: Option<LinkedList<Clinic>>,
@@ -19,6 +20,7 @@ pub struct Database {
     pub prescriptions_data: Option<LinkedList<Prescription>>,
     pub drugs_data: Option<Box<TreeNode<Drug>>>,
     pub drug_gps: Option<LinkedList<DrugGP>>,
+    pub map: Graph,
 }
 
 impl Database {
@@ -30,6 +32,7 @@ impl Database {
             prescriptions_data: None,
             drugs_data: None,
             drug_gps: None,
+            map: Graph::new(),
         }
     }
 

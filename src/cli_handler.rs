@@ -16,6 +16,9 @@ use crate::menus_logic::{
     visit_patients_wrapper,
     display_all_drug_gps,
     show_search_complexity,
+    add_location,
+    remove_location,
+    print_map,
 };
 
 
@@ -188,7 +191,7 @@ pub fn emergency_doctor_menu(auth: &mut Auth) {
 }
 
 pub fn admin_menu(auth: &mut Auth) {
-    let options = ["Register a new user", "Delete a user", "Search for a user", "View all users", "My Account", "Logout"];
+    let options = ["Register a new user", "Delete a user", "Search for a user", "View all users", "Map & Ambulances", "My Account", "Logout"];
     let menu = MenuHandler::new("What would you like to do?".to_string(), options.into_iter());
     let selected = menu.run();
     clear_terminal();
@@ -198,8 +201,26 @@ pub fn admin_menu(auth: &mut Auth) {
         "Delete a user" => println!("Delete a user"),
         "Search for a user" => println!("Search for a user"),
         "View all users" => println!("View all users"),
+        "Map & Ambulances" => map_ambulances_menu(auth),
         "My Account" => println!("My Account"),
         "Logout" => auth.logout(),
+        _ => println!("Invalid option"),
+    }
+}
+
+fn map_ambulances_menu(auth: &mut Auth) {
+    let options = ["Add Location", "Remove Location", "Print Map", "Send Ambulance", "History", "back"];
+    let menu = MenuHandler::new("What would you like to do?".to_string(), options.into_iter());
+    let selected = menu.run();
+    clear_terminal();
+
+    match selected.as_str() {
+        "Add Location" => add_location(auth),
+        "Remove Location" => remove_location(auth),
+        "Print Map" => print_map(auth),
+        "Send Ambulance" => println!("Send Ambulance"),
+        "History" => println!("History"),
+        "back" => admin_menu(auth),
         _ => println!("Invalid option"),
     }
 }

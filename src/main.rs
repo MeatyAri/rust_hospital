@@ -33,6 +33,10 @@ fn test_data(auth: &mut Auth) {
     auth.signup("emdoc1".to_string(), "password1".to_string(), "Dr. John Doe".to_string(), "123-45-6789".to_string(), 30, Role::EmergencyDoctor).unwrap();
     auth.logout();
 
+    // insert an admin for testing
+    auth.signup("admin1".to_string(), "password1".to_string(), "Dr. John Doe".to_string(), "123-45-6789".to_string(), 30, Role::Admin).unwrap();
+    auth.logout();
+
     // Insert two clinics for testing
     let mut doctors1 = LinkedList::new();
     doctors1.insert("doc1".to_string());

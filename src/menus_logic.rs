@@ -1,6 +1,7 @@
 use crate::auth::Auth;
 use crate::cli_handler::{doctor_menu, get_input_string, MenuHandler};
 use crate::data_structures::linked_list::LinkedList;
+use crate::data_structures::map::LocationType;
 use crate::data_structures::stack::Stack;
 use crate::db::entities::{Drug, DrugGP, Patient, Prescription, Role};
 use crate::data_structures::trie::Trie;
@@ -337,4 +338,51 @@ pub fn show_search_complexity(auth: &mut Auth) {
     println!("Total nodes in the tree: {}", total_nodes);
     println!("Height of the tree: {}", height);
     println!("Complexity of search: O(log {})", height);
+}
+
+pub fn add_location(auth: &mut Auth) {
+    let name = get_input_string("Enter location name".to_string());
+    if let Some(node) = auth.db.map.nodes.get(name.as_str()) {
+        println!("Location already exists, adding edges instead");
+    } else {
+        let options = ["Hospital", "Home", "Other"];
+        let menu = MenuHandler::new("Enter location type".to_string(), options.into_iter());
+        let selected = menu.run();
+        let location_type = match selected.as_str() {
+            "Hospital" => LocationType::Hospital,
+            "Home" => LocationType::Home,
+            "Other" => LocationType::Other,
+            _ => {
+                println!("Invalid location type");
+                return;
+            }
+        };
+        auth.db.map.add_node(name.clone(), location_type);
+    }
+
+    loop {
+        let neighbor = get_input_string("Enter neighbor id or type 'done'".to_string());
+        if neighbor == "done" {
+            break;
+        }
+        if let Some(_node) = auth.db.map.nodes.get(neighbor.as_str()) {
+            auth.db.map.add_edge(name.clone(), neighbor.clone());
+        } else {
+            println!("Neighbor not found");
+        }
+    }
+    auth.db.commit().unwrap();
+    println!("Location added");
+}
+
+
+pub fn remove_location(auth: &mut Auth) {
+    let name: String = get_input_string("Enter location name".to_string());
+    auth.db.map.remove_node(name);
+    auth.db.commit().unwrap();
+    println!("Location removed");
+}
+
+pub fn print_map(auth: &mut Auth) {
+    auth.db.map.print_graph();
 }
