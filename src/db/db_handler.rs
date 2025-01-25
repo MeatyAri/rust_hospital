@@ -9,7 +9,7 @@ use crate::db::entities::User;
 use crate::data_structures::bst::TreeNode;
 use crate::data_structures::linked_list::LinkedList;
 
-use super::entities::{Clinic, DoctorsList, Prescription, Drug, DrugGP};
+use super::entities::{Clinic, DoctorsList, Prescription, Drug, DrugGP, Ambulance};
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -21,6 +21,7 @@ pub struct Database {
     pub drugs_data: Option<Box<TreeNode<Drug>>>,
     pub drug_gps: Option<LinkedList<DrugGP>>,
     pub map: Graph,
+    pub ambulances_data: Option<LinkedList<Ambulance>>,
 }
 
 impl Database {
@@ -33,6 +34,7 @@ impl Database {
             drugs_data: None,
             drug_gps: None,
             map: Graph::new(),
+            ambulances_data: None,
         }
     }
 
@@ -134,6 +136,23 @@ impl Database {
         }
     }
 
+    pub fn insert_ambulance(&mut self, ambulance: Ambulance) -> io::Result<()> {
+        match self.ambulances_data {
+            Some(ref mut data) => {
+                if data.get_by_uniq_attr(ambulance.name.clone()).is_some() {
+                    return Err(Error::new(ErrorKind::AlreadyExists, "Ambulance already exists"));
+                }
+                data.insert(ambulance);
+                Ok(())
+            },
+            None => {
+                self.ambulances_data = Some(LinkedList::new());
+                self.ambulances_data.as_mut().unwrap().insert(ambulance);
+                Ok(())
+            },
+        }
+    }
+
     pub fn get_user(&self, uniq_attr: String) -> Option<&User> {
         match self.users_data {
             Some(ref data) => data.get_by_uniq_attr(uniq_attr),
@@ -183,6 +202,13 @@ impl Database {
         }
     }
 
+    pub fn get_ambulance(&mut self, uniq_attr: String) -> Option<&mut Ambulance> {
+        match self.ambulances_data {
+            Some(ref mut data) => data.get_by_uniq_attr(uniq_attr),
+            None => None,
+        }
+    }
+
     pub fn remove_prescription(&mut self, uniq_attr: String) -> bool {
         match self.prescriptions_data {
             Some(ref mut data) => data.remove_by_uniq_attr(uniq_attr),
@@ -198,6 +224,13 @@ impl Database {
 
     pub fn remove_drug_gp(&mut self, uniq_attr: String) -> bool {
         match self.drug_gps {
+            Some(ref mut data) => data.remove_by_uniq_attr(uniq_attr),
+            None => false,
+        }
+    }
+
+    pub fn remove_ambulance(&mut self, uniq_attr: String) -> bool {
+        match self.ambulances_data {
             Some(ref mut data) => data.remove_by_uniq_attr(uniq_attr),
             None => false,
         }

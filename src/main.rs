@@ -5,8 +5,8 @@ mod data_structures;
 mod menus_logic;
 
 use cli_handler::{admin_menu, doctor_menu, emergency_doctor_menu, patient_menu, pharmacist_menu, triage_supervisor_menu};
-use data_structures::linked_list::LinkedList;
-use db::{db_handler::Database, entities::{Clinic, Drug, DrugGP, Role}};
+use data_structures::{linked_list::LinkedList, map::{LocationType, Object}};
+use db::{db_handler::Database, entities::{Ambulance, Clinic, Drug, DrugGP, Role}};
 use auth::Auth;
 
 
@@ -66,6 +66,33 @@ fn test_data(auth: &mut Auth) {
     drugs2.insert(4);
     auth.db.insert_drug_gp(DrugGP { name: "Antibiotics".to_string(), drugs: drugs2 }).unwrap();
 
+    // insert some locations for testing
+    auth.db.map.add_node("Hospital A".to_string(), LocationType::Hospital);
+    auth.db.map.add_node("Hospital B".to_string(), LocationType::Hospital);
+    auth.db.map.add_node("Home A".to_string(), LocationType::Home);
+    auth.db.map.add_node("Home B".to_string(), LocationType::Home);
+    auth.db.map.add_node("Other A".to_string(), LocationType::Other);
+    auth.db.map.add_node("Other B".to_string(), LocationType::Other);
+
+    // insert some edges for testing
+    auth.db.map.add_edge("Hospital A".to_string(), "Hospital B".to_string());
+    auth.db.map.add_edge("Hospital A".to_string(), "Home A".to_string());
+    auth.db.map.add_edge("Hospital A".to_string(), "Other A".to_string());
+    auth.db.map.add_edge("Hospital B".to_string(), "Home B".to_string());
+    auth.db.map.add_edge("Hospital B".to_string(), "Other B".to_string());
+    auth.db.map.add_edge("Home A".to_string(), "Home B".to_string());
+    auth.db.map.add_edge("Home A".to_string(), "Other A".to_string());
+    auth.db.map.add_edge("Home B".to_string(), "Other B".to_string());
+    auth.db.map.add_edge("Other B".to_string(), "Home B".to_string());
+
+    // insert some ambulances for testing
+    auth.db.insert_ambulance(Ambulance { name: "Ambulance A".to_string(), hospital: "Hospital A".to_string(), location: "Hospital A".to_string() }).unwrap();
+    auth.db.map.add_object_to_node("Hospital A", Object { name: "Ambulance A".to_string() });
+    auth.db.insert_ambulance(Ambulance { name: "Ambulance B".to_string(), hospital: "Hospital B".to_string(), location: "Hospital B".to_string() }).unwrap();
+    auth.db.map.add_object_to_node("Hospital B", Object { name: "Ambulance B".to_string() });
+    auth.db.insert_ambulance(Ambulance { name: "Ambulance C".to_string(), hospital: "Hospital A".to_string(), location: "Other B".to_string() }).unwrap();
+    auth.db.map.add_object_to_node("Other B", Object { name: "Ambulance C".to_string() });
+    
     auth.db.commit().unwrap();
 }
 

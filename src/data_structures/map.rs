@@ -1,7 +1,10 @@
 use serde::{Serialize, Deserialize};
 use crate::data_structures::linked_list::LinkedList;
 use crate::db::entities::UniqueAttribute;
-use crate::data_structures::hash_map::HashMap; // Use the custom HashMap
+use crate::data_structures::hash_map::HashMap;
+use crate::data_structures::priority_queue::PriorityQueue;
+use std::cmp::Ordering;
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LocationType {
@@ -25,6 +28,24 @@ impl UniqueAttribute for Object {
 pub struct Node {
     pub location_type: LocationType,
     pub objects: LinkedList<Object>,
+}
+
+#[derive(Debug, Eq, PartialEq, Clone)]
+struct State {
+    cost: usize,
+    position: String,
+}
+
+impl Ord for State {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.cost.cmp(&self.cost)
+    }
+}
+
+impl PartialOrd for State {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -69,6 +90,71 @@ impl Graph {
         if let Some(node) = self.nodes.get_mut(node_id) {
             node.objects.push_front(object);
         }
+    }
+
+    pub fn remove_object_from_node(&mut self, node_id: &str, object_name: &str) {
+        if let Some(node) = self.nodes.get_mut(node_id) {
+            node.objects.remove_by_uniq_attr(object_name.to_string());
+        }
+    }
+
+    pub fn move_object(&mut self, from: &str, to: &str, object_name: &str) -> Result<(), String> {
+        if !self.nodes.contains_key(from) || !self.nodes.contains_key(to) {
+            return Err("Node does not exist".to_string());
+        }
+
+        let src_node = self.nodes.get_mut(from).unwrap();
+        let object = src_node.objects.get_by_uniq_attr(object_name.to_string());
+        if object.is_none() {
+            return Err("Object does not exist in source node".to_string());
+        }
+        let object = object.unwrap().clone();
+        src_node.objects.remove_by_uniq_attr(object_name.to_string());
+
+        let dest_node = self.nodes.get_mut(to).unwrap();
+        dest_node.objects.push_front(object);
+
+        Ok(())
+    }
+
+    // Dijkstra's algorithm
+    pub fn shortest_path(&self, start: &str, goal: &str) -> Option<LinkedList<String>> {
+        let mut dist: HashMap<String, usize> = HashMap::new();
+        let mut prev: HashMap<String, Option<String>> = HashMap::new();
+        let mut heap = PriorityQueue::new();
+
+        dist.insert(start.to_string(), 0);
+        heap.push(State { cost: 0, position: start.to_string() });
+
+        while let Some(State { cost, position }) = heap.pop() {
+            if position == goal {
+                let mut path = LinkedList::new();
+                let mut current = Some(goal.to_string());
+                while let Some(node) = current {
+                    path.push_front(node.clone());
+                    current = prev.get(&node).cloned().unwrap_or(None);
+                }
+                return Some(path);
+            }
+
+            if cost > *dist.get(&position).unwrap_or(&usize::MAX) {
+                continue;
+            }
+
+            if let Some(neighbors) = self.edges.get(&position) {
+                for neighbor in neighbors.iter() {
+                    let next = State { cost: cost + 1, position: neighbor.clone() };
+
+                    if next.cost < *dist.get(&next.position).unwrap_or(&usize::MAX) {
+                        heap.push(next.clone());
+                        dist.insert(next.position.clone(), next.cost);
+                        prev.insert(next.position.clone(), Some(position.clone()));
+                    }
+                }
+            }
+        }
+
+        None
     }
 
     pub fn print_graph(&self) {

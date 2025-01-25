@@ -19,6 +19,11 @@ use crate::menus_logic::{
     add_location,
     remove_location,
     print_map,
+    add_ambulance,
+    remove_ambulance,
+    move_ambulance,
+    send_ambulance_to_patient,
+    list_ambulances,
 };
 
 
@@ -209,7 +214,18 @@ pub fn admin_menu(auth: &mut Auth) {
 }
 
 fn map_ambulances_menu(auth: &mut Auth) {
-    let options = ["Add Location", "Remove Location", "Print Map", "Send Ambulance", "History", "back"];
+    let options = [
+        "Add Location",
+        "Remove Location",
+        "Print Map",
+        "Add Ambulance",
+        "Remove Ambulance",
+        "Move Ambulance",
+        "List Ambulances",
+        "Send Ambulance to Patient",
+        "History",
+        "back"
+    ];
     let menu = MenuHandler::new("What would you like to do?".to_string(), options.into_iter());
     let selected = menu.run();
     clear_terminal();
@@ -218,7 +234,11 @@ fn map_ambulances_menu(auth: &mut Auth) {
         "Add Location" => add_location(auth),
         "Remove Location" => remove_location(auth),
         "Print Map" => print_map(auth),
-        "Send Ambulance" => println!("Send Ambulance"),
+        "Add Ambulance" => add_ambulance(auth),
+        "Remove Ambulance" => remove_ambulance(auth),
+        "Move Ambulance" => move_ambulance(auth),
+        "List Ambulances" => list_ambulances(auth),
+        "Send Ambulance to Patient" => send_ambulance_to_patient(auth),
         "History" => println!("History"),
         "back" => admin_menu(auth),
         _ => println!("Invalid option"),

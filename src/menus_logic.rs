@@ -1,9 +1,9 @@
 use crate::auth::Auth;
 use crate::cli_handler::{doctor_menu, get_input_string, MenuHandler};
 use crate::data_structures::linked_list::LinkedList;
-use crate::data_structures::map::LocationType;
+use crate::data_structures::map::{LocationType, Object};
 use crate::data_structures::stack::Stack;
-use crate::db::entities::{Drug, DrugGP, Patient, Prescription, Role};
+use crate::db::entities::{Ambulance, Drug, DrugGP, Patient, Prescription, Role};
 use crate::data_structures::trie::Trie;
 
 
@@ -342,7 +342,7 @@ pub fn show_search_complexity(auth: &mut Auth) {
 
 pub fn add_location(auth: &mut Auth) {
     let name = get_input_string("Enter location name".to_string());
-    if let Some(node) = auth.db.map.nodes.get(name.as_str()) {
+    if auth.db.map.nodes.get(name.as_str()).is_some() {
         println!("Location already exists, adding edges instead");
     } else {
         let options = ["Hospital", "Home", "Other"];
@@ -385,4 +385,107 @@ pub fn remove_location(auth: &mut Auth) {
 
 pub fn print_map(auth: &mut Auth) {
     auth.db.map.print_graph();
+}
+
+pub fn add_ambulance(auth: &mut Auth) {
+    let name = get_input_string("Enter ambulance name".to_string());
+    if auth.db.get_ambulance(name.clone()).is_some() {
+        println!("Ambulance already exists");
+        return;
+    }
+    let hospital = get_input_string("Enter hospital name".to_string());
+    if auth.db.map.nodes.get(hospital.as_str()).is_none() {
+        println!("Hospital not found");
+        return;
+    }
+    let location = get_input_string("Enter the ambulance current location name".to_string());
+    if auth.db.map.nodes.get(location.as_str()).is_none() {
+        println!("Location not found");
+        return;
+    }
+    
+    auth.db.insert_ambulance(Ambulance::new(name.clone(), hospital.clone(), location.clone())).unwrap();
+    auth.db.map.add_object_to_node(location.as_str(), Object { name });
+    auth.db.commit().unwrap();
+    println!("Ambulance added");
+}
+
+pub fn remove_ambulance(auth: &mut Auth) {
+    let name = get_input_string("Enter ambulance name".to_string());
+    let ambulance = auth.db.get_ambulance(name.clone());
+    if ambulance.is_none() {
+        println!("Ambulance not found");
+        return;
+    }
+    let ambulance = ambulance.unwrap().clone();
+    auth.db.map.remove_object_from_node(ambulance.location.as_str(), &name);
+    auth.db.remove_ambulance(name.clone());
+    auth.db.commit().unwrap();
+    println!("Ambulance removed");
+}
+
+pub fn move_ambulance(auth: &mut Auth) {
+    let name = get_input_string("Enter ambulance name".to_string());
+    let ambulance = auth.db.get_ambulance(name.clone());
+    if ambulance.is_none() {
+        println!("Ambulance not found");
+        return;
+    }
+    let ambulance = ambulance.unwrap().clone();
+    let location = get_input_string("Enter new location name".to_string());
+    if auth.db.map.nodes.get(location.as_str()).is_none() {
+        println!("Location not found");
+        return;
+    }
+    auth.db.ambulances_data.as_mut().unwrap().get_by_uniq_attr(name.clone()).unwrap().location = location.clone();
+    auth.db.map.move_object(&ambulance.location, &location, &name).unwrap();
+    auth.db.commit().unwrap();
+    println!("Ambulance moved");
+}
+
+pub fn list_ambulances(auth: &mut Auth) {
+    let ambulances = auth.db.ambulances_data.as_ref();
+    if ambulances.is_none() {
+        println!("No ambulances available");
+        return;
+    }
+    let ambulances = ambulances.unwrap().clone();
+
+    for ambulance in ambulances.iter() {
+        println!("{:?}", ambulance);
+    }
+}
+
+pub fn send_ambulance_to_patient(auth: &mut Auth) {
+    let patient_loc = get_input_string("Enter patient location".to_string());
+    let dst_hosp = get_input_string("Enter destination hospital".to_string());
+
+    let mut shortest_path = None;
+    let mut min_distance = std::f32::MAX;
+
+    for ambulance in auth.db.ambulances_data.as_mut().unwrap().iter_mut() {
+        let path = auth.db.map.shortest_path(&ambulance.location, &patient_loc);
+        let mut distance = std::f32::MAX;
+        if let Some(path) = path {
+            distance = path.len() as f32;
+        }
+        if ambulance.hospital != dst_hosp {
+            distance *= 1.2; // Penalty for ambulances from other hospitals
+        }
+        if distance < min_distance {
+            min_distance = distance;
+            shortest_path = Some((ambulance, distance));
+        }
+    }
+
+    if let Some((ambulance, _)) = shortest_path {
+        println!("Sending ambulance: {}", ambulance.name);
+        auth.db.map.move_object(&ambulance.location, &patient_loc, &ambulance.name).unwrap();
+        auth.db.map.move_object(&patient_loc, &dst_hosp, &ambulance.name).unwrap();
+        println!("Ambulance sent from {} to {} via {}", ambulance.location, dst_hosp, patient_loc);
+        ambulance.location = dst_hosp.clone();
+        auth.db.commit().unwrap();
+    } else {
+        println!("No available ambulance found");
+    }
 }

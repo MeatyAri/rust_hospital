@@ -184,7 +184,6 @@ impl PartialEq for Drug {
 impl Eq for Drug {}
 
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DrugGP {
     pub name: String,
@@ -192,6 +191,29 @@ pub struct DrugGP {
 }
 
 impl UniqueAttribute for DrugGP {
+    fn uattr(&self) -> String {
+        self.name.clone()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Ambulance {
+    pub name: String,
+    pub hospital: String,
+    pub location: String,
+}
+
+impl Ambulance {
+    pub fn new(name: String, hospital: String, location: String) -> Self {
+        Ambulance {
+            name,
+            hospital,
+            location,
+        }
+    }
+}
+
+impl UniqueAttribute for Ambulance {
     fn uattr(&self) -> String {
         self.name.clone()
     }
