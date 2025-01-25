@@ -3,6 +3,7 @@ mod auth;
 mod db;
 mod data_structures;
 mod menus_logic;
+mod sha_hasher;
 
 use cli_handler::{admin_menu, doctor_menu, emergency_doctor_menu, patient_menu, pharmacist_menu, triage_supervisor_menu};
 use data_structures::{linked_list::LinkedList, map::{LocationType, Object}};

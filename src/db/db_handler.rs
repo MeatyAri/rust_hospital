@@ -8,8 +8,10 @@ use crate::data_structures::map::Graph;
 use crate::db::entities::User;
 use crate::data_structures::bst::TreeNode;
 use crate::data_structures::linked_list::LinkedList;
+use crate::data_structures::hash_map::HashMap;
 
 use super::entities::{Clinic, DoctorsList, Prescription, Drug, DrugGP, Ambulance};
+use chrono::Local;
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -22,6 +24,7 @@ pub struct Database {
     pub drug_gps: Option<LinkedList<DrugGP>>,
     pub map: Graph,
     pub ambulances_data: Option<LinkedList<Ambulance>>,
+    pub logs_data: HashMap<String, String>,
 }
 
 impl Database {
@@ -35,6 +38,7 @@ impl Database {
             drug_gps: None,
             map: Graph::new(),
             ambulances_data: None,
+            logs_data: HashMap::new(),
         }
     }
 
@@ -151,6 +155,11 @@ impl Database {
                 Ok(())
             },
         }
+    }
+
+    pub fn insert_log(&mut self, data_str: String) {
+        let datetime = Local::now().to_string();
+        self.logs_data.insert(datetime, data_str);
     }
 
     pub fn get_user(&self, uniq_attr: String) -> Option<&User> {

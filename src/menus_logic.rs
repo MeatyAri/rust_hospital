@@ -439,6 +439,7 @@ pub fn move_ambulance(auth: &mut Auth) {
     }
     auth.db.ambulances_data.as_mut().unwrap().get_by_uniq_attr(name.clone()).unwrap().location = location.clone();
     auth.db.map.move_object(&ambulance.location, &location, &name).unwrap();
+    auth.db.insert_log(format!("Ambulance {} moved from {} to {}", name, ambulance.location, location));
     auth.db.commit().unwrap();
     println!("Ambulance moved");
 }
@@ -481,11 +482,24 @@ pub fn send_ambulance_to_patient(auth: &mut Auth) {
     if let Some((ambulance, _)) = shortest_path {
         println!("Sending ambulance: {}", ambulance.name);
         auth.db.map.move_object(&ambulance.location, &patient_loc, &ambulance.name).unwrap();
+        let log_message1 = format!("Ambulance {} sent from {} to patient at {}", ambulance.name, ambulance.location, patient_loc);
+
         auth.db.map.move_object(&patient_loc, &dst_hosp, &ambulance.name).unwrap();
+        let log_message2 = format!("Ambulance {} sent from {} to {}", ambulance.name, patient_loc, dst_hosp);
         println!("Ambulance sent from {} to {} via {}", ambulance.location, dst_hosp, patient_loc);
+
         ambulance.location = dst_hosp.clone();
+        auth.db.insert_log(log_message1);
+        auth.db.insert_log(log_message2);
         auth.db.commit().unwrap();
     } else {
         println!("No available ambulance found");
+    }
+}
+
+pub fn print_logs(auth: &mut Auth) {
+    let logs = &auth.db.logs_data;
+    for (datetime, log) in logs.iter() {
+        println!("{}: {}", datetime, log);
     }
 }

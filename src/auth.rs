@@ -4,6 +4,8 @@ use crate::data_structures::priority_queue::PriorityQueue;
 use crate::db::db_handler::Database;
 use crate::cli_handler::{clear_terminal, get_input_string, MenuHandler};
 use crate::db::entities::{DoctorsList, Role, User};
+use crate::sha_hasher::Sha256;
+use hex;
 
 
 pub struct Auth<'a> {
@@ -39,6 +41,10 @@ impl<'a> Auth<'a> {
     }
 
     pub fn register(&mut self, username: String, password: String, full_name: String, ssn: String, age: u32, role: Role) -> io::Result<User> {
+        let mut hasher = Sha256::new();
+        hasher.update(password.as_bytes());
+        let password = hex::encode(hasher.finalize());
+        
         let user = User::new(username, password, full_name, ssn, age, role);
         self.db.insert_user(user.clone())?;
 

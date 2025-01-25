@@ -24,6 +24,7 @@ use crate::menus_logic::{
     move_ambulance,
     send_ambulance_to_patient,
     list_ambulances,
+    print_logs,
 };
 
 
@@ -239,7 +240,7 @@ fn map_ambulances_menu(auth: &mut Auth) {
         "Move Ambulance" => move_ambulance(auth),
         "List Ambulances" => list_ambulances(auth),
         "Send Ambulance to Patient" => send_ambulance_to_patient(auth),
-        "History" => println!("History"),
+        "History" => print_logs(auth),
         "back" => admin_menu(auth),
         _ => println!("Invalid option"),
     }

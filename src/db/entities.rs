@@ -5,6 +5,8 @@ use std::fmt::Debug;
 use crate::data_structures::linked_list::LinkedList;
 use crate::data_structures::priority_queue::PriorityQueue;
 use crate::data_structures::stack::Stack;
+use crate::sha_hasher::Sha256;
+use hex;
 
 
 pub trait UniqueAttribute {
@@ -70,6 +72,10 @@ impl User {
     }
 
     pub fn verify_password(&self, password: String) -> bool {
+        let mut hasher = Sha256::new();
+        hasher.update(password.as_bytes());
+        let password = hex::encode(hasher.finalize());
+        
         self.password == password
     }
 }
